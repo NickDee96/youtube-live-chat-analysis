@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
 from sklearn.feature_extraction.text import TfidfVectorizer
-vectorizer = TfidfVectorizer(max_features=20,stop_words="english")
+
+vectorizer = TfidfVectorizer(max_features=5,stop_words="english",ngram_range=(1,2))
 
 
 
@@ -21,23 +22,22 @@ image_colors = ImageColorGenerator(mask)
 
 
 df=pd.read_csv("liveChatData.csv")
+df=df.fillna("")
 ## Top 50 Most active users
 top=df.Author.value_counts().head(20).to_frame().reset_index()
 top.columns=["Author","Count"]
 
 fig=go.Figure()
 fig=fig.add_trace(
-    go.Barpolar(
-        theta=top.Author,
-        r=top.Count,
-        width=5,
+    go.Bar(
+        x=top.Author,
+        y=top.Count,
         marker=dict(
             color=top.Count,
             colorscale="magma",
         ),
         marker_line_color="grey",
-        marker_line_width=2,
-        opacity=0.8
+        marker_line_width=2
     )
 )
 
@@ -63,34 +63,41 @@ app.layout=html.Div([
             html.Div([
                 dcc.Graph(
                     id="comparison_plot",
-                    figure=fig
+                    figure=fig,
+                    hoverData={'points': [{'curveNumber': 0, 'pointNumber': 0, 'pointIndex': 0, 'x': 'Nairobi real', 'y': 97, 'marker.color': 97}]}
                 )
             ])
-        ]),
+        ],width=5),
         dbc.Col([
             html.Div(
                 id="wordcloud"
+            )
+        ],width=3),
+        dbc.Col([
+            html.Div(
+                id="example_messages"
             )
         ])
     ])
 ])
 
 @app.callback(
-    Output("wordcloud","children"),
+    [Output("wordcloud","children"),
+    Output("example_messages","children")],
     [Input("comparison_plot","hoverData")]
 )
 
 def get_wordcloud(hoverData):
-    pers=hoverData["points"][0]["theta"]
+    pers=hoverData["points"][0]["x"]
     msg=df[df.Author==pers].reset_index(drop=True)["Message"]
     photo=df[df.Author==pers].reset_index(drop=True)["Photo"][0]
-    X = vectorizer.fit_transform(msg)
+    vectorizer.fit_transform(msg)
     words=vectorizer.get_feature_names()
     #plt.figure(figsize=[7,7])
     #wordcloud_ke = WordCloud( background_color="white", mode="RGBA", max_words=30, mask=mask).generate(" ".join(list(msg)))
     #fig=plt.imshow(wordcloud_ke .recolor(color_func=image_colors), interpolation="bilinear")
     #fig = mpl_to_plotly(fig)
-    child=html.Div([
+    child1=html.Div([
         html.H3(
             children=pers
         ),
@@ -104,7 +111,15 @@ def get_wordcloud(hoverData):
             [html.Li(x) for x in words ]
         )
     ])
-    return child
+    child2=html.Div([
+        html.H3(
+            children="Some messages that they sent"
+        ),
+        html.Div(
+            [dbc.Alert(x,color="secondary") for x in list(msg.head(5))]
+        )
+    ])
+    return (child1,child2)
     
 
 app.run_server()
