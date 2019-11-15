@@ -7,7 +7,7 @@ import csv
 import time
    
 # Arguments that need to passed to the build function 
-DEVELOPER_KEY = "AIzaSyDkrcmca5sQKG77A_acYxl9QVyLeP2M1_M" 
+DEVELOPER_KEY = "" 
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
    
